@@ -70,6 +70,7 @@ main() {
 
     set -- "${POSITIONAL_ARGS[@]}" # restore positional parameters
 
+    mkdir -p "${SC_PATH}"
     run_container
 }
 
