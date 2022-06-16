@@ -72,9 +72,11 @@ class Citations(Flask):
             raise RuntimeError("Failed to create dir: " + self.sc_path)
 
         self.screenshots_uri = "/citations/screenshots"
-        self.add_url_rule(self.screenshots_uri + "/<path:name>", view_func=self.send_screenshot)
+        self.update_uri = "/citations/update"
+        self.add_url_rule(self.screenshots_uri + "/<path:name>", view_func=self.api_send_screenshot)
+        self.add_url_rule(self.update_uri, view_func=self.api_update_citations)
 
-    def update_citations(self) -> bool:
+    def update_citations(self, force: bool=False) -> bool:
         ''' update_citations updates the number of citations.
         The latest number of citations will be stored in self.last_citations,
         and the filename of the screenshot will be stored in self.last_screenshot.
@@ -96,7 +98,7 @@ class Citations(Flask):
         current_citations = int(citations_tds[0].text)
 
         # Check the number of citations is updated or not
-        if self.last_citations and self.last_citations == current_citations:
+        if not force and self.last_citations and self.last_citations == current_citations:
             return False
 
         # The number of citations is updated
@@ -224,9 +226,6 @@ class Citations(Flask):
 
         requests.post(Citations.kakao_msg_url, headers=header, data=data)
 
-    def send_screenshot(self, name):
-        return send_from_directory(self.sc_path, name)
-
     def refresh_kakao_auth(self):
         if not self.kakao_auth_code:
             self.kakao_auth()
@@ -235,16 +234,31 @@ class Citations(Flask):
     def repeat_checking_citations(self):
         if self.update_citations():
             self.refresh_kakao_auth()
-            self.kakao_send_msg("Citations: %d\nScreenshot: http://%s:%s/%s/%s"
-                %(self.last_citations, self.domain, self.http_port, self.screenshots_uri, self.last_screenshot))
+            self.kakao_send_msg("Citations: %d\nScreenshot: %s\nUpdate: %s"
+                %(self.last_citations, self.create_image_uri(), self.create_update_uri()))
         self.check_thread = threading.Timer(self.check_interval, self.repeat_checking_citations)
         self.check_thread.start()
+
+    def create_image_uri(self):
+        return "http://%s:%s%s/%s" %(self.domain, self.http_port, self.screenshots_uri, self.last_screenshot)
+
+    def create_update_uri(self):
+        return "http://%s:%s%s" %(self.domain, self.http_port, self.update_uri)
 
     def run(self):
         self.repeat_checking_citations()
         super().run(host="0.0.0.0", port=self.http_port)
         if self.check_thread:
             self.check_thread.cancel()
+
+    def api_send_screenshot(self, name):
+        return send_from_directory(self.sc_path, name)
+
+    def api_update_citations(self):
+        self.update_citations(True)
+        image_uri = self.create_image_uri()
+        return "Citations: %d<br>Screenshot: <a href=\"%s\">%s</a>" \
+            %(self.last_citations, image_uri, image_uri)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
