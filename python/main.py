@@ -73,8 +73,10 @@ class Citations(Flask):
 
         self.screenshots_uri = "/citations/screenshots"
         self.update_uri = "/citations/update"
+        self.latest_uri = "/citations/latest"
         self.add_url_rule(self.screenshots_uri + "/<path:name>", view_func=self.api_send_screenshot)
         self.add_url_rule(self.update_uri, view_func=self.api_update_citations)
+        self.add_url_rule(self.latest_uri, view_func=self.api_latest_citations)
 
     def update_citations(self, force: bool=False) -> bool:
         ''' update_citations updates the number of citations.
@@ -256,6 +258,9 @@ class Citations(Flask):
 
     def api_update_citations(self):
         self.update_citations(True)
+        return self.api_latest_citations()
+
+    def api_latest_citations(self):
         image_uri = self.create_image_uri()
         return "Citations: %d<br>Screenshot: <a href=\"%s\">%s</a>" \
             %(self.last_citations, image_uri, image_uri)
