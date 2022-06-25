@@ -67,7 +67,7 @@ class Citations(Flask):
         h.setFormatter(f)
         self.logger.addHandler(h)
 
-        h = logging.FileHandler(filename=os.path.join(self.log_path, self.log_file))
+        h = logging.FileHandler(filename=os.path.join(self.log_path, self.log_file), mode="w")
         h.setLevel(self.log_level)
         h.setFormatter(f)
         self.logger.addHandler(h)
@@ -107,6 +107,8 @@ class Citations(Flask):
         self.add_url_rule(self.update_uri, view_func=self.api_update_citations)
         self.add_url_rule(self.latest_uri, view_func=self.api_latest_citations)
 
+        self.load_token()
+
     def update_citations(self, force: bool=False) -> bool:
         ''' update_citations updates the number of citations.
         The latest number of citations will be stored in self.last_citations,
@@ -133,6 +135,7 @@ class Citations(Flask):
 
             # Check the number of citations is updated or not
             if not force and self.last_citations and self.last_citations == current_citations:
+                self.logger.info("Citations is not updated")
                 return False
 
             # The number of citations is updated
@@ -145,7 +148,7 @@ class Citations(Flask):
             driver.save_screenshot("%s/%s" %(self.sc_path, self.last_screenshot))
             driver.quit()
 
-            self.logger.info("Citations updated: %d", self.last_citations)
+            self.logger.info("Citations updated: %d (force: %s)", self.last_citations, str(force))
 
             return True
         except Exception as e:
@@ -288,6 +291,7 @@ class Citations(Flask):
             self.refresh_kakao_auth()
             self.kakao_send_msg("Citations: %d\nScreenshot: %s\nUpdate: %s"
                 %(self.last_citations, self.create_image_uri(), self.create_update_uri()))
+            self.store_token()
         self.check_thread = threading.Timer(self.check_interval, self.repeat_checking_citations)
         self.check_thread.start()
 
@@ -296,6 +300,9 @@ class Citations(Flask):
 
     def create_update_uri(self):
         return "http://%s:%s%s" %(self.domain, self.http_port, self.update_uri)
+
+    def create_latest_uri(self):
+        return "http://%s:%s%s" %(self.domain, self.http_port, self.latest_uri)
 
     def run(self):
         self.repeat_checking_citations()
@@ -308,12 +315,47 @@ class Citations(Flask):
 
     def api_update_citations(self):
         self.update_citations(True)
+        self.store_token()
         return self.api_latest_citations()
 
     def api_latest_citations(self):
         image_uri = self.create_image_uri()
         return "Citations: %d<br>Screenshot: <a href=\"%s\">%s</a>" \
             %(self.last_citations, image_uri, image_uri)
+
+    def store_token(self):
+        with open(os.path.join(self.log_path, "token.json"), "w") as fp:
+            json.dump({
+                "kakao_rest_api_key": self.kakao_rest_api_key,
+                "kakao_auth_code": self.kakao_auth_code,
+                "kakao_refresh_token": self.kakao_refresh_token,
+                "kakao_refresh_token_expire": self.kakao_refresh_token_expire,
+                "kakao_access_token": self.kakao_access_token,
+                "kakao_access_token_expire": self.kakao_access_token_expire,
+                "last_citations": self.last_citations,
+                "last_screenshot": self.last_screenshot
+            }, fp=fp, indent=4)
+
+    def load_token(self):
+        token_path = os.path.join(self.log_path, "token.json")
+        if not os.path.exists(token_path):
+            self.logger.debug("Failed to open token file, maybe the first time of running")
+            return
+
+        with open(token_path, "r") as fp:
+            token = json.load(fp=fp)
+
+            if token["kakao_rest_api_key"] != self.kakao_rest_api_key:
+                self.logger.debug("Kakao rest api key is changed, don't use the previous token")
+                return
+
+            self.kakao_auth_code = token["kakao_auth_code"]
+            self.kakao_refresh_token = token["kakao_refresh_token"]
+            self.kakao_refresh_token_expire = token["kakao_refresh_token_expire"]
+            self.kakao_access_token = token["kakao_access_token"]
+            self.kakao_access_token_expire = token["kakao_access_token_expire"]
+            self.last_citations = token["last_citations"]
+            self.last_screenshot = token["last_screenshot"]
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
