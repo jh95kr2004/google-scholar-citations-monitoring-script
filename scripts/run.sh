@@ -2,12 +2,15 @@
 
 SCRIPT_PATH="$( cd -- "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
 SC_PATH="${SCRIPT_PATH}/../screenshots"
+LOG_PATH="${SCRIPT_PATH}/../log"
+LOG_FILE="log.txt"
+LOG_LEVEL="debug"
 CONDA_PATH=`which conda`
 CONDA_ENV="py3_chrome_selenium"
 KAKAO_REST_API_KEY=""
 KAKAO_ID=""
 KAKAO_PW=""
-CHECK_INTERVAL="10"
+CHECK_INTERVAL="300"
 DOMAIN=""
 HTTP_PORT="8080"
 
@@ -25,7 +28,10 @@ run() {
         --kakao_pw "${KAKAO_PW}" \
         --check_interval "${CHECK_INTERVAL}" \
         --domain "${DOMAIN}" \
-        --http_port "${HTTP_PORT}"
+        --http_port "${HTTP_PORT}" \
+        --log_path "${LOG_PATH}" \
+        --log_file "${LOG_FILE}" \
+        --log_level "${LOG_LEVEL}"
 }
 
 main() {
@@ -60,6 +66,21 @@ main() {
         ;;
         -p|--port)
         HTTP_PORT="$2"
+        shift # past argument
+        shift # past value
+        ;;
+        -lp|--log-path)
+        LOG_PATH="$2"
+        shift # past argument
+        shift # past value
+        ;;
+        -lf|--log-file)
+        LOG_FILE="$2"
+        shift # past argument
+        shift # past value
+        ;;
+        -ll|--log-level)
+        LOG_LEVEL="$2"
         shift # past argument
         shift # past value
         ;;

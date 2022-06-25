@@ -14,11 +14,8 @@ install_chrome() {
         error "google-chrome-stable is already installed, remove it and retry this script"
     fi
 
-    wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
-    sudo bash -c "echo 'deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main' >> /etc/apt/sources.list.d/google-chrome.list"
-    sudo apt -y update
-
-    if ! sudo apt -y install google-chrome-stable=102.0.5005.115-1; then
+    wget http://dl.google.com/linux/chrome/deb/pool/main/g/google-chrome-stable/google-chrome-stable_102.0.5005.115-1_amd64.deb
+    if ! sudo apt -y install ./google-chrome-stable_102.0.5005.115-1_amd64.deb; then
         error "Failed to install Chrome"
     fi
 }

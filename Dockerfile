@@ -11,8 +11,9 @@ RUN rm -f Miniconda3-py39_4.12.0-Linux-x86_64.sh
 ENV PATH=/root/miniconda3/bin:${PATH}
 
 WORKDIR /root/work
-COPY scripts scripts
-RUN bash scripts/install.sh
+COPY scripts/install.sh scripts/install.sh
+RUN bash scripts/install.sh && rm scripts/install.sh
+COPY scripts/run.sh scripts/run.sh
 COPY python python
 
 ENTRYPOINT ["scripts/run.sh"]

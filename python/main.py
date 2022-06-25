@@ -1,9 +1,11 @@
 import argparse
 import chromedriver_binary
 import json
+import logging
 import os
 import requests
 import socket
+import sys
 import threading
 import time
 from datetime import datetime
@@ -28,14 +30,47 @@ class Citations(Flask):
             kakao_pw: str,
             check_interval: int=300,
             sc_path: str="./screenshots",
+            log_path: str="./log",
+            log_file: str="log.txt",
+            log_level: int=logging.DEBUG,
             domain: str="",
             http_port: str="8080"
         ):
         super().__init__(__name__)
 
-        self.sc_path: str = os.path.abspath(sc_path)        # The absoulute path of screenshots directory
+        self.sc_path: str = os.path.abspath(sc_path)        # The absolute path of screenshots directory
+        self.log_path: str = os.path.abspath(log_path)      # The absolute path of log directory
+        self.log_file: str = log_file                       # The name of log file
+        self.log_level: int = log_level                     # The level of log
         self.domain: str = domain                           # Domain name of the server, it will be used for the url of screenshot
         self.http_port: str = http_port                     # The port of http server
+
+        try:
+            if not os.path.exists(self.sc_path):
+                os.makedirs(self.sc_path)
+        except:
+            raise RuntimeError("Failed to create dir: " + self.sc_path)
+
+        try:
+            if not os.path.exists(self.log_path):
+                os.makedirs(self.log_path)
+        except:
+            raise RuntimeError("Failed to create dir: " + self.log_path)
+
+        # Initialize logging
+        self.logger = logging.getLogger("Citations")
+        self.logger.setLevel(self.log_level)
+
+        f = logging.Formatter("[%(asctime)s][%(levelname)s] %(message)s")
+        h = logging.StreamHandler()
+        h.setLevel(self.log_level)
+        h.setFormatter(f)
+        self.logger.addHandler(h)
+
+        h = logging.FileHandler(filename=os.path.join(self.log_path, self.log_file))
+        h.setLevel(self.log_level)
+        h.setFormatter(f)
+        self.logger.addHandler(h)
 
         # If the domain is not specified, use the local IP address instead
         if not self.domain or len(self.domain) <= 0:
@@ -65,12 +100,6 @@ class Citations(Flask):
         self.last_citations: int = None
         self.last_screenshot: str = None
 
-        try:
-            if not os.path.exists(self.sc_path):
-                os.makedirs(self.sc_path)
-        except:
-            raise RuntimeError("Failed to create dir: " + self.sc_path)
-
         self.screenshots_uri = "/citations/screenshots"
         self.update_uri = "/citations/update"
         self.latest_uri = "/citations/latest"
@@ -85,100 +114,111 @@ class Citations(Flask):
 
         Returns: Returns True if updated
         '''
-        chrome_options = Options()
-        chrome_options.add_argument("--headless")
-        chrome_options.add_argument("--start-maximized")
-        chrome_options.add_argument("--window-size=3840,2160")
-        chrome_options.add_argument("--disable-dev-shm-usage")
-        chrome_options.add_argument("--no-sandbox")
-        driver = webdriver.Chrome(options=chrome_options)
-        driver.get(Citations.scholar_url)
+        self.logger.info("Start updating citations")
 
-        # Parse html elements to get citations
-        WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.CSS_SELECTOR, "table#gsc_rsb_st td.gsc_rsb_std")))
-        citations_tds = driver.find_elements(by=By.CSS_SELECTOR, value="table#gsc_rsb_st td.gsc_rsb_std")
-        current_citations = int(citations_tds[0].text)
+        try:
+            chrome_options = Options()
+            chrome_options.add_argument("--headless")
+            chrome_options.add_argument("--start-maximized")
+            chrome_options.add_argument("--window-size=3840,2160")
+            chrome_options.add_argument("--disable-dev-shm-usage")
+            chrome_options.add_argument("--no-sandbox")
+            driver = webdriver.Chrome(options=chrome_options)
+            driver.get(Citations.scholar_url)
 
-        # Check the number of citations is updated or not
-        if not force and self.last_citations and self.last_citations == current_citations:
+            # Parse html elements to get citations
+            WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.CSS_SELECTOR, "table#gsc_rsb_st td.gsc_rsb_std")))
+            citations_tds = driver.find_elements(by=By.CSS_SELECTOR, value="table#gsc_rsb_st td.gsc_rsb_std")
+            current_citations = int(citations_tds[0].text)
+
+            # Check the number of citations is updated or not
+            if not force and self.last_citations and self.last_citations == current_citations:
+                return False
+
+            # The number of citations is updated
+            current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            self.last_citations = current_citations
+            self.last_screenshot = "%s_%d.png" %(current_time, self.last_citations)
+
+            # Get screenshot of the page
+            driver.set_window_size(3840, 2160)
+            driver.save_screenshot("%s/%s" %(self.sc_path, self.last_screenshot))
+            driver.quit()
+
+            self.logger.info("Citations updated: %d", self.last_citations)
+
+            return True
+        except Exception as e:
+            self.logger.error("Failed to update citations: %s", str(e))
             return False
-
-        # The number of citations is updated
-        current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        self.last_citations = current_citations
-        self.last_screenshot = "%s_%d.png" %(current_time, self.last_citations)
-
-        # Get screenshot of the page
-        driver.set_window_size(3840, 2160)
-        driver.save_screenshot("%s/%s" %(self.sc_path, self.last_screenshot))
-        driver.quit()
-
-        print("citations updated: %d" %(self.last_citations))
-
-        return True
 
     def kakao_auth(self):
         ''' kakao_auth updates authorization code, refresh token and access token.
         If the refresh token wasn't obtained or expired, this function should be called to refresh tokens.
         '''
-        chrome_options = Options()
-        chrome_options.add_argument("--headless")
-        chrome_options.add_argument("--disable-dev-shm-usage")
-        chrome_options.add_argument("--no-sandbox")
-        driver = webdriver.Chrome(options=chrome_options)
-        driver.get("%s?client_id=%s&redirect_uri=%s&response_type=code&scope=talk_message"
-            %(Citations.kakao_auth_url, self.kakao_rest_api_key, Citations.kakao_redirect_url))
+        self.logger.info("Update kakao auth")
 
-        # Put user ID and password into the login form
-        WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.CSS_SELECTOR, "form#login-form")))
-        id_input = driver.find_element(by=By.CSS_SELECTOR, value="input#id_email_2")
-        pw_input = driver.find_element(by=By.CSS_SELECTOR, value="input#id_password_3")
-        login_button = driver.find_element(by=By.CSS_SELECTOR, value="form#login-form button.btn_confirm")
+        try:
+            chrome_options = Options()
+            chrome_options.add_argument("--headless")
+            chrome_options.add_argument("--disable-dev-shm-usage")
+            chrome_options.add_argument("--no-sandbox")
+            driver = webdriver.Chrome(options=chrome_options)
+            driver.get("%s?client_id=%s&redirect_uri=%s&response_type=code&scope=talk_message"
+                %(Citations.kakao_auth_url, self.kakao_rest_api_key, Citations.kakao_redirect_url))
 
-        # Do login
-        id_input.send_keys(self.kakao_id)
-        pw_input.send_keys(self.kakao_pw)
-        login_button.click()
+            # Put user ID and password into the login form
+            WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.CSS_SELECTOR, "form#login-form")))
+            id_input = driver.find_element(by=By.CSS_SELECTOR, value="input#id_email_2")
+            pw_input = driver.find_element(by=By.CSS_SELECTOR, value="input#id_password_3")
+            login_button = driver.find_element(by=By.CSS_SELECTOR, value="form#login-form button.btn_confirm")
 
-        # Wait for redirection to kakao_redirect_url or agreement page
-        WebDriverWait(driver, 20).until(lambda driver: Citations.kakao_redirect_url in driver.current_url or
-            driver.find_element(by=By.CSS_SELECTOR, value="input#agreeAll"))
+            # Do login
+            id_input.send_keys(self.kakao_id)
+            pw_input.send_keys(self.kakao_pw)
+            login_button.click()
 
-        if Citations.kakao_redirect_url not in driver.current_url:
-            # If the page landed to the agreement page, agree sending messages by app
-            agree_all_button = driver.find_element(by=By.CSS_SELECTOR, value="input#agreeAll")
-            accept_button = driver.find_element(by=By.CSS_SELECTOR, value="button#acceptButton")
-            driver.execute_script("arguments[0].click();", agree_all_button)
-            accept_button.click()
-            WebDriverWait(driver, 20).until(EC.url_contains(Citations.kakao_redirect_url))
+            # Wait for redirection to kakao_redirect_url or agreement page
+            WebDriverWait(driver, 20).until(lambda driver: Citations.kakao_redirect_url in driver.current_url or
+                driver.find_element(by=By.CSS_SELECTOR, value="input#agreeAll"))
 
-        # If code reaches here, the current url should be kakao_redirect_url
-        # We can parse authorizaion code from the url
-        code = urlparse(driver.current_url)
-        self.kakao_auth_code = parse_qs(code.query)["code"][0]
-        driver.quit()
+            if Citations.kakao_redirect_url not in driver.current_url:
+                # If the page landed to the agreement page, agree sending messages by app
+                agree_all_button = driver.find_element(by=By.CSS_SELECTOR, value="input#agreeAll")
+                accept_button = driver.find_element(by=By.CSS_SELECTOR, value="button#acceptButton")
+                driver.execute_script("arguments[0].click();", agree_all_button)
+                accept_button.click()
+                WebDriverWait(driver, 20).until(EC.url_contains(Citations.kakao_redirect_url))
 
-        # Get refresh token and access token from kakao_redirect_url
-        data = {
-            'grant_type': 'authorization_code',
-            'client_id': self.kakao_rest_api_key,
-            'redirect_uri': self.kakao_redirect_url,
-            'code': self.kakao_auth_code,
-        }
-        response = requests.post(self.kakao_token_url, data=data)
-        tokens = response.json()
+            # If code reaches here, the current url should be kakao_redirect_url
+            # We can parse authorizaion code from the url
+            code = urlparse(driver.current_url)
+            self.kakao_auth_code = parse_qs(code.query)["code"][0]
+            driver.quit()
 
-        # Parse tokens and calculate expire time
-        current_time = time.time()
-        self.kakao_refresh_token = tokens["refresh_token"]
-        self.kakao_refresh_token_expire = tokens["refresh_token_expires_in"] + current_time - (10 * 60) # give 10min margin
-        self.kakao_access_token = tokens["access_token"]
-        self.kakao_access_token_expire = tokens["expires_in"] + current_time - (10 * 60) # give 10min margin
+            # Get refresh token and access token from kakao_redirect_url
+            data = {
+                'grant_type': 'authorization_code',
+                'client_id': self.kakao_rest_api_key,
+                'redirect_uri': self.kakao_redirect_url,
+                'code': self.kakao_auth_code,
+            }
+            response = requests.post(self.kakao_token_url, data=data)
+            tokens = response.json()
 
-        print("===== kakao auth updated =====")
-        print("kakao auth code: %s" %(self.kakao_auth_code))
-        print("kakao refresh code: %s" %(self.kakao_refresh_token))
-        print("kakao access code: %s" %(self.kakao_access_token))
+            # Parse tokens and calculate expire time
+            current_time = time.time()
+            self.kakao_refresh_token = tokens["refresh_token"]
+            self.kakao_refresh_token_expire = tokens["refresh_token_expires_in"] + current_time - (10 * 60) # give 10min margin
+            self.kakao_access_token = tokens["access_token"]
+            self.kakao_access_token_expire = tokens["expires_in"] + current_time - (10 * 60) # give 10min margin
+
+            self.logger.info("Kakao auth updated")
+            self.logger.debug("- Kakao auth code: %s", self.kakao_auth_code)
+            self.logger.debug("- Kakao refresh code: %s", self.kakao_refresh_token)
+            self.logger.debug("- Kakao access code: %s", self.kakao_access_token)
+        except Exception as e:
+            self.logger.error("Failed to update kakao auth: %s", str(e))
 
     def kakao_refresh_access_token(self):
         ''' kakao_refresh_access_token refreshes the access token.
@@ -194,39 +234,49 @@ class Citations(Flask):
             self.kakao_auth()
             return
 
-        # Get access token from kakao_redirect_url using refresh token
-        data = {
-            'grant_type': 'refresh_token',
-            'client_id': self.kakao_rest_api_key,
-            'refresh_token': self.kakao_refresh_token,
-        }
-        response = requests.post(self.kakao_token_url, data=data)
-        tokens = response.json()
+        self.logger.info("Refresh kakao access token")
 
-        # Parse tokens and calculate expire time
-        current_time = time.time()
-        self.kakao_access_token = tokens["access_token"]
-        self.kakao_access_token_expire = tokens["expires_in"] + current_time - (10 * 60) # give 10min margin
+        try:
+            # Get access token from kakao_redirect_url using refresh token
+            data = {
+                'grant_type': 'refresh_token',
+                'client_id': self.kakao_rest_api_key,
+                'refresh_token': self.kakao_refresh_token,
+            }
+            response = requests.post(self.kakao_token_url, data=data)
+            tokens = response.json()
 
-        print("===== kakao access code updated =====")
-        print("kakao access code: %s" %(self.kakao_access_token))
+            # Parse tokens and calculate expire time
+            current_time = time.time()
+            self.kakao_access_token = tokens["access_token"]
+            self.kakao_access_token_expire = tokens["expires_in"] + current_time - (10 * 60) # give 10min margin
+
+            self.logger.info("Kakao access code updated")
+            self.logger.debug("- kakao access code: %s", self.kakao_access_token)
+        except Exception as e:
+            self.logger.error("Failed to refresh kakao access token: %s", str(e))
 
     def kakao_send_msg(self, msg: str):
         ''' kakao_send_msg sends message to the app user.
         The access token should be obtained, before call this function.
         '''
-        header = {'Authorization': 'Bearer ' + self.kakao_access_token}
-        post = {
-            'object_type': 'text',
-            'text': msg,
-            'link': {
-                'web_url': 'https://developers.kakao.com',
-                'mobile_web_url': 'https://developers.kakao.com'
-            }
-        }
-        data = {'template_object': json.dumps(post)}
+        self.logger.info("Send kakao message: %s", msg)
 
-        requests.post(Citations.kakao_msg_url, headers=header, data=data)
+        try:
+            header = {'Authorization': 'Bearer ' + self.kakao_access_token}
+            post = {
+                'object_type': 'text',
+                'text': msg,
+                'link': {
+                    'web_url': 'https://developers.kakao.com',
+                    'mobile_web_url': 'https://developers.kakao.com'
+                }
+            }
+            data = {'template_object': json.dumps(post)}
+
+            requests.post(Citations.kakao_msg_url, headers=header, data=data)
+        except Exception as e:
+            self.logger.error("Failed to send kakao message: %s", str(e))
 
     def refresh_kakao_auth(self):
         if not self.kakao_auth_code:
@@ -274,7 +324,12 @@ if __name__ == "__main__":
     parser.add_argument('--check_interval', default=300, type=int)
     parser.add_argument('--domain', default="", type=str)
     parser.add_argument('--http_port', default="8080", type=str)
+    parser.add_argument('--log_path', default="./log", type=str)
+    parser.add_argument('--log_file', default="log.txt", type=str)
+    parser.add_argument('--log_level', default="debug", type=str)
     args = parser.parse_args()
+
+    print("args:", args.__dict__)
 
     c = Citations(
         kakao_rest_api_key=args.kakao_rest_api_key,
@@ -282,6 +337,9 @@ if __name__ == "__main__":
         kakao_pw=args.kakao_pw,
         check_interval=args.check_interval,
         sc_path=args.sc_path,
+        log_path=args.log_path,
+        log_file=args.log_file,
+        log_level=getattr(logging, args.log_level.upper()),
         domain=args.domain,
         http_port=args.http_port
     )

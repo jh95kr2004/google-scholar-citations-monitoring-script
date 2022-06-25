@@ -181,4 +181,7 @@ cython_debug/
 # Screenshots
 screenshots/
 
+# Log
+log/
+
 # End of https://www.toptal.com/developers/gitignore/api/linux,python
