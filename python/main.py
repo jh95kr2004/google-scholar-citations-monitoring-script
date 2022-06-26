@@ -10,6 +10,7 @@ import threading
 import time
 from datetime import datetime
 from flask import Flask, send_from_directory
+from logging.handlers import TimedRotatingFileHandler
 from selenium import webdriver
 from urllib.parse import urlparse, parse_qs
 from selenium.webdriver.chrome.options import Options
@@ -67,7 +68,7 @@ class Citations(Flask):
         h.setFormatter(f)
         self.logger.addHandler(h)
 
-        h = logging.FileHandler(filename=os.path.join(self.log_path, self.log_file), mode="w")
+        h = TimedRotatingFileHandler(filename=os.path.join(self.log_path, self.log_file), when="midnight", backupCount=3)
         h.setLevel(self.log_level)
         h.setFormatter(f)
         self.logger.addHandler(h)
