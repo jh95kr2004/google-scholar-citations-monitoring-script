@@ -9,5 +9,5 @@ class Sender:
     def __init__(self, sender_type: SenderType):
         self.sender_type = sender_type
 
-    def send(self, subject: str, content: str, attachments: List[Tuple[str, str, str, BinaryIO]], receiver: str):
+    def send(self, subject: str = "", content: str = "", attachments: List[Tuple[str, str, str, BinaryIO]] = [], receiver: List[str] = []):
         pass

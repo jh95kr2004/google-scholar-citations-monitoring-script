@@ -149,7 +149,7 @@ class Kakao(Sender):
         except Exception as e:
             self.logger.error("Failed to refresh kakao access token: %s", str(e))
 
-    def send(self, subject: str = "", content: str = "", attachments: List[Tuple[str, str, str, BinaryIO]] = [], receiver: str = ""):
+    def send(self, subject: str = "", content: str = "", attachments: List[Tuple[str, str, str, BinaryIO]] = [], receiver: List[str] = []):
         ''' kakao_send_msg sends message to the app user.
         The access token should be obtained, before call this function.
         '''

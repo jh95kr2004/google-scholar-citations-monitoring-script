@@ -13,6 +13,7 @@ KAKAO_PW=""
 GMAIL_ID=""
 GMAIL_PW=""
 CHECK_INTERVAL="300"
+TARGET_CITATIONS="1000"
 DOMAIN=""
 HTTP_PORT="8080"
 SENDER_TYPE="gmail"
@@ -32,6 +33,7 @@ run() {
         --gmail_id "${GMAIL_ID}" \
         --gmail_pw "${GMAIL_PW}" \
         --check_interval "${CHECK_INTERVAL}" \
+        --target_citations "${TARGET_CITATIONS}" \
         --domain "${DOMAIN}" \
         --http_port "${HTTP_PORT}" \
         --log_path "${LOG_PATH}" \
@@ -72,6 +74,11 @@ main() {
         ;;
         -i|--check-interval)
         CHECK_INTERVAL="$2"
+        shift # past argument
+        shift # past value
+        ;;
+        -t|--target-citations)
+        TARGET_CITATIONS="$2"
         shift # past argument
         shift # past value
         ;;

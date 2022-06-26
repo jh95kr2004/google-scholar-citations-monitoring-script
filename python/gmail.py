@@ -36,7 +36,7 @@ class Gmail(Sender):
                 # ignore exception
                 pass
 
-    def send(self, subject: str = "", content: str = "", attachments: List[Tuple[str, str, str, BinaryIO]] = [], receiver: str = ""):
+    def send(self, subject: str = "", content: str = "", attachments: List[Tuple[str, str, str, BinaryIO]] = [], receiver: List[str] = []):
         if not self.is_connected():
             self.login()
 
@@ -44,7 +44,7 @@ class Gmail(Sender):
             msg = EmailMessage()
             msg.set_content(content)
             msg["From"] = self.id
-            msg["To"] = receiver
+            msg["To"] = ", ".join(receiver)
             msg["Subject"] = subject
 
             for filename, maintype, subtype, fp in attachments:
