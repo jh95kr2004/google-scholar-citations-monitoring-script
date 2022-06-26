@@ -8,9 +8,12 @@ LOG_LEVEL="debug"
 KAKAO_REST_API_KEY=""
 KAKAO_ID=""
 KAKAO_PW=""
+GMAIL_ID=""
+GMAIL_PW=""
 CHECK_INTERVAL="300"
 DOMAIN=""
 HTTP_PORT="8080"
+SENDER_TYPE="gmail"
 DOCKER_IMAGE_TAG="hanseung-lee-citations"
 DOCKER_CONTAINER_NAME="hanseung-lee-citations"
 DAEMON=false
@@ -21,20 +24,27 @@ run_container() {
         docker_args="-d"
     fi
 
+    uid=$(id -u)
+    gid=$(id -g)
+
     docker run "${docker_args}" --rm \
+        --user $uid:$gid \
         -p "${HTTP_PORT}":"${HTTP_PORT}" \
         --name "${DOCKER_CONTAINER_NAME}" \
-        -v "${SC_PATH}":/root/work/screenshots \
-        -v "${LOG_PATH}":/root/work/log \
+        -v "${SC_PATH}":/opt/hanseung-lee-citations/screenshots \
+        -v "${LOG_PATH}":/opt/hanseung-lee-citations/log \
         "${DOCKER_IMAGE_TAG}" \
         -r "${KAKAO_REST_API_KEY}" \
-        -u "${KAKAO_ID}" \
-        -w "${KAKAO_PW}" \
+        -kid "${KAKAO_ID}" \
+        -kpw "${KAKAO_PW}" \
+        -gid "${GMAIL_ID}" \
+        -gpw "${GMAIL_PW}" \
         -i "${CHECK_INTERVAL}" \
         -d "${DOMAIN}" \
         -p "${HTTP_PORT}" \
         -lf "${LOG_FILE}" \
-        -ll "${LOG_LEVEL}"
+        -ll "${LOG_LEVEL}" \
+        -st "${SENDER_TYPE}"
 }
 
 main() {
@@ -47,13 +57,23 @@ main() {
         shift # past argument
         shift # past value
         ;;
-        -u|--kakao-id)
+        -kid|--kakao-id)
         KAKAO_ID="$2"
         shift # past argument
         shift # past value
         ;;
-        -w|--kakao-pw)
+        -kpw|--kakao-pw)
         KAKAO_PW="$2"
+        shift # past argument
+        shift # past value
+        ;;
+        -gid|--gmail-id)
+        GMAIL_ID="$2"
+        shift # past argument
+        shift # past value
+        ;;
+        -gpw|--gmail-pw)
+        GMAIL_PW="$2"
         shift # past argument
         shift # past value
         ;;
@@ -84,6 +104,11 @@ main() {
         ;;
         -ll|--log-level)
         LOG_LEVEL="$2"
+        shift # past argument
+        shift # past value
+        ;;
+        -st|--sender-type)
+        SENDER_TYPE="$2"
         shift # past argument
         shift # past value
         ;;

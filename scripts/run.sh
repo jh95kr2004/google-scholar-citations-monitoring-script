@@ -10,9 +10,12 @@ CONDA_ENV="py3_chrome_selenium"
 KAKAO_REST_API_KEY=""
 KAKAO_ID=""
 KAKAO_PW=""
+GMAIL_ID=""
+GMAIL_PW=""
 CHECK_INTERVAL="300"
 DOMAIN=""
 HTTP_PORT="8080"
+SENDER_TYPE="gmail"
 
 activate_env() {
     eval "$(conda shell.bash hook)"
@@ -20,18 +23,21 @@ activate_env() {
 }
 
 run() {
-    cd "${SCRIPT_PATH}"
-    python ../python/main.py \
+    cd "${SCRIPT_PATH}/.."
+    python -m python.citations \
         --sc_path "${SC_PATH}" \
         --kakao_rest_api_key "${KAKAO_REST_API_KEY}" \
         --kakao_id "${KAKAO_ID}" \
         --kakao_pw "${KAKAO_PW}" \
+        --gmail_id "${GMAIL_ID}" \
+        --gmail_pw "${GMAIL_PW}" \
         --check_interval "${CHECK_INTERVAL}" \
         --domain "${DOMAIN}" \
         --http_port "${HTTP_PORT}" \
         --log_path "${LOG_PATH}" \
         --log_file "${LOG_FILE}" \
-        --log_level "${LOG_LEVEL}"
+        --log_level "${LOG_LEVEL}" \
+        --sender_type "${SENDER_TYPE}"
 }
 
 main() {
@@ -44,13 +50,23 @@ main() {
         shift # past argument
         shift # past value
         ;;
-        -u|--kakao-id)
+        -kid|--kakao-id)
         KAKAO_ID="$2"
         shift # past argument
         shift # past value
         ;;
-        -w|--kakao-pw)
+        -kpw|--kakao-pw)
         KAKAO_PW="$2"
+        shift # past argument
+        shift # past value
+        ;;
+        -gid|--gmail-id)
+        GMAIL_ID="$2"
+        shift # past argument
+        shift # past value
+        ;;
+        -gpw|--gmail-pw)
+        GMAIL_PW="$2"
         shift # past argument
         shift # past value
         ;;
@@ -81,6 +97,11 @@ main() {
         ;;
         -ll|--log-level)
         LOG_LEVEL="$2"
+        shift # past argument
+        shift # past value
+        ;;
+        -st|--sender-type)
+        SENDER_TYPE="$2"
         shift # past argument
         shift # past value
         ;;
