@@ -33,7 +33,13 @@ $ ./docker/build.sh
 
 ## Run
 
-Before running the script, open the `run.sh` file accordingly and update the `GMAIL_ID`, `GMAIL_PW` and `DOMAIN` variables manually. (`DOMAIN` is optional.) Also, you can change the period of updating the number of citations in the script by changing the `CHECK_INTERVAL` variable. (default is 300s)
+Before running the script, open the `./scripts/run.sh` or `./docker/run.sh` file accordingly and update the following variables.
+
+- **SCHOLAR_URL** (required): The Google Scholar URL to be monitored. (e.g., https://scholar.google.com/citations?user=DdhlAfgAAAAJ&hl=en)
+- **GMAIL_ID** (required): Your Google account (including `@gmail.com`) to login gmail service and send notification emails to yourself.
+- **GMAIL_PW** (required): Create an app password and set it to this variable. It is *NOT* your original Google account password. (See https://support.google.com/accounts/answer/185833?hl=en)
+- **DOMAIN** (optional): The script will start a simple HTTP server to update or see the last citations number. If you pass your own domain, you can access the server via the domain. Otherwise, you can access it only locaaly.
+- **CHECK_INTERVAL** (optional): the period of updating the citations numbers. (default is 300s)
 
 ### Host OS
 ```

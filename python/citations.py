@@ -19,10 +19,9 @@ from .sender import Sender, SenderType
 
 
 class Citations(Flask):
-    scholar_url = "https://scholar.google.com/citations?user=DdhlAfgAAAAJ&hl=en"
-
     def __init__(
         self,
+        scholar_url: str,
         gmail_id: str,
         gmail_pw: str,
         check_interval: int = 300,
@@ -46,6 +45,10 @@ class Citations(Flask):
         self.log_level: int = log_level  # The level of log
         self.domain: str = domain  # Domain name of the server, it will be used for the url of screenshot
         self.http_port: str = http_port  # The port of http server
+        self.scholar_url: str = scholar_url  # Google Scholar URL
+
+        if self.scholar_url is None or not self.scholar_url:
+            raise RuntimeError("scholar_url must be set")
 
         try:
             if not os.path.exists(self.sc_path):
@@ -121,7 +124,7 @@ class Citations(Flask):
             chrome_options.add_argument("--disable-dev-shm-usage")
             chrome_options.add_argument("--no-sandbox")
             driver = webdriver.Chrome(options=chrome_options)
-            driver.get(Citations.scholar_url)
+            driver.get(self.scholar_url)
 
             # Parse html elements to get citations
             WebDriverWait(driver, 20).until(
@@ -233,6 +236,7 @@ class Citations(Flask):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--sc_path", default="./screenshots", type=str)
+    parser.add_argument("--scholar_url", default=None, type=str)
     parser.add_argument("--gmail_id", default=None, type=str)
     parser.add_argument("--gmail_pw", default=None, type=str)
     parser.add_argument("--check_interval", default=300, type=int)
@@ -247,6 +251,7 @@ if __name__ == "__main__":
     print("args:", args.__dict__)
 
     c = Citations(
+        scholar_url=args.scholar_url,
         gmail_id=args.gmail_id,
         gmail_pw=args.gmail_pw,
         check_interval=args.check_interval,

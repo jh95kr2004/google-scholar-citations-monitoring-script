@@ -7,6 +7,7 @@ LOG_FILE="log.txt"
 LOG_LEVEL="debug"
 CONDA_PATH=`which conda`
 CONDA_ENV="py3_chrome_selenium"
+SCHOLAR_URL=""
 GMAIL_ID=""
 GMAIL_PW=""
 CHECK_INTERVAL="300"
@@ -23,6 +24,7 @@ run() {
     cd "${SCRIPT_PATH}/.."
     python -m python.citations \
         --sc_path "${SC_PATH}" \
+        --scholar_url "${SCHOLAR_URL}" \
         --gmail_id "${GMAIL_ID}" \
         --gmail_pw "${GMAIL_PW}" \
         --check_interval "${CHECK_INTERVAL}" \
@@ -39,13 +41,24 @@ main() {
 
     while [[ $# -gt 0 ]]; do
     case $1 in
+        -s|--scholar-url)
+        if [[ -n "$2" ]]; then
+            SCHOLAR_URL="$2"
+        fi
+        shift # past argument
+        shift # past value
+        ;;
         -gid|--gmail-id)
-        GMAIL_ID="$2"
+        if [[ -n "$2" ]]; then
+            GMAIL_ID="$2"
+        fi
         shift # past argument
         shift # past value
         ;;
         -gpw|--gmail-pw)
-        GMAIL_PW="$2"
+        if [[ -n "$2" ]]; then
+            GMAIL_PW="$2"
+        fi
         shift # past argument
         shift # past value
         ;;
@@ -55,7 +68,9 @@ main() {
         shift # past value
         ;;
         -d|--domian)
-        DOMAIN="$2"
+        if [[ -n "$2" ]]; then
+            DOMAIN="$2"
+        fi
         shift # past argument
         shift # past value
         ;;

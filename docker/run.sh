@@ -5,6 +5,7 @@ SC_PATH="${SCRIPT_PATH}/../screenshots"
 LOG_PATH="${SCRIPT_PATH}/../log"
 LOG_FILE="log.txt"
 LOG_LEVEL="debug"
+SCHOLAR_URL=""
 GMAIL_ID=""
 GMAIL_PW=""
 CHECK_INTERVAL="300"
@@ -33,6 +34,7 @@ run_container() {
         -v "${LOG_PATH}":/opt/hanseung-lee-citations/log \
         -v "${HOME}/.cache:/.cache" \
         "${DOCKER_IMAGE_TAG}" \
+        -s "${SCHOLAR_URL}" \
         -gid "${GMAIL_ID}" \
         -gpw "${GMAIL_PW}" \
         -i "${CHECK_INTERVAL}" \
@@ -48,6 +50,11 @@ main() {
 
     while [[ $# -gt 0 ]]; do
     case $1 in
+        -s|--scholar-url)
+        SCHOLAR_URL="$2"
+        shift # past argument
+        shift # past value
+        ;;
         -gid|--gmail-id)
         GMAIL_ID="$2"
         shift # past argument
