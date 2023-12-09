@@ -24,6 +24,7 @@ run_container() {
 
     uid=$(id -u)
     gid=$(id -g)
+    mkdir -p "${HOME}/.cache"
 
     docker run "${docker_args}" --rm \
         --user $uid:$gid \
@@ -31,6 +32,7 @@ run_container() {
         --name "${DOCKER_CONTAINER_NAME}" \
         -v "${SC_PATH}":/opt/hanseung-lee-citations/screenshots \
         -v "${LOG_PATH}":/opt/hanseung-lee-citations/log \
+        -v "${HOME}/.cache:/.cache" \
         "${DOCKER_IMAGE_TAG}" \
         -gid "${GMAIL_ID}" \
         -gpw "${GMAIL_PW}" \
