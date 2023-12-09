@@ -7,9 +7,6 @@ LOG_FILE="log.txt"
 LOG_LEVEL="debug"
 CONDA_PATH=`which conda`
 CONDA_ENV="py3_chrome_selenium"
-KAKAO_REST_API_KEY=""
-KAKAO_ID=""
-KAKAO_PW=""
 GMAIL_ID=""
 GMAIL_PW=""
 CHECK_INTERVAL="300"
@@ -27,9 +24,6 @@ run() {
     cd "${SCRIPT_PATH}/.."
     python -m python.citations \
         --sc_path "${SC_PATH}" \
-        --kakao_rest_api_key "${KAKAO_REST_API_KEY}" \
-        --kakao_id "${KAKAO_ID}" \
-        --kakao_pw "${KAKAO_PW}" \
         --gmail_id "${GMAIL_ID}" \
         --gmail_pw "${GMAIL_PW}" \
         --check_interval "${CHECK_INTERVAL}" \
@@ -47,21 +41,6 @@ main() {
 
     while [[ $# -gt 0 ]]; do
     case $1 in
-        -r|--kakao-rest-api-key)
-        KAKAO_REST_API_KEY="$2"
-        shift # past argument
-        shift # past value
-        ;;
-        -kid|--kakao-id)
-        KAKAO_ID="$2"
-        shift # past argument
-        shift # past value
-        ;;
-        -kpw|--kakao-pw)
-        KAKAO_PW="$2"
-        shift # past argument
-        shift # past value
-        ;;
         -gid|--gmail-id)
         GMAIL_ID="$2"
         shift # past argument

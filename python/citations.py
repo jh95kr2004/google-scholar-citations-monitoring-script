@@ -15,7 +15,6 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 
 from .gmail import Gmail
-from .kakao import Kakao
 from .sender import Sender, SenderType
 
 class Citations(Flask):
@@ -23,9 +22,6 @@ class Citations(Flask):
     hanseung_lee_email = "soul3434@gmail.com"
 
     def __init__(self,
-            kakao_rest_api_key: str,
-            kakao_id: str,
-            kakao_pw: str,
             gmail_id: str,
             gmail_pw: str,
             check_interval: int=300,
@@ -78,9 +74,7 @@ class Citations(Flask):
         if not self.domain or len(self.domain) <= 0:
             self.domain = socket.gethostbyname(socket.gethostname())
 
-        if sender_type == SenderType.KAKAO.value:
-            self.sender: Sender = Kakao(kakao_rest_api_key, kakao_id, kakao_pw, self.logger)
-        elif sender_type == SenderType.GMAIL.value:
+        if sender_type == SenderType.GMAIL.value:
             self.sender: Sender = Gmail(gmail_id, gmail_pw, self.logger)
         else:
             raise ValueError("invalid sender type: %s" %(sender_type))
@@ -210,9 +204,6 @@ class Citations(Flask):
                 "last_screenshot": self.last_screenshot
             }
 
-            if self.sender.sender_type == SenderType.KAKAO:
-                token["kakao"] = self.sender.get_token()
-
             json.dump(token, fp=fp, indent=4)
 
     def load_token(self):
@@ -226,15 +217,9 @@ class Citations(Flask):
             self.last_citations = token["last_citations"]
             self.last_screenshot = token["last_screenshot"]
 
-            if self.sender.sender_type == SenderType.KAKAO and "kakao" in token:
-                self.sender.set_token(token["kakao"])
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--sc_path', default="./screenshots", type=str)
-    parser.add_argument('--kakao_rest_api_key', default=None, type=str)
-    parser.add_argument('--kakao_id', default=None, type=str)
-    parser.add_argument('--kakao_pw', default=None, type=str)
     parser.add_argument('--gmail_id', default=None, type=str)
     parser.add_argument('--gmail_pw', default=None, type=str)
     parser.add_argument('--check_interval', default=300, type=int)
@@ -250,9 +235,6 @@ if __name__ == "__main__":
     print("args:", args.__dict__)
 
     c = Citations(
-        kakao_rest_api_key=args.kakao_rest_api_key,
-        kakao_id=args.kakao_id,
-        kakao_pw=args.kakao_pw,
         gmail_id=args.gmail_id,
         gmail_pw=args.gmail_pw,
         check_interval=args.check_interval,

@@ -5,9 +5,6 @@ SC_PATH="${SCRIPT_PATH}/../screenshots"
 LOG_PATH="${SCRIPT_PATH}/../log"
 LOG_FILE="log.txt"
 LOG_LEVEL="debug"
-KAKAO_REST_API_KEY=""
-KAKAO_ID=""
-KAKAO_PW=""
 GMAIL_ID=""
 GMAIL_PW=""
 CHECK_INTERVAL="300"
@@ -35,9 +32,6 @@ run_container() {
         -v "${SC_PATH}":/opt/hanseung-lee-citations/screenshots \
         -v "${LOG_PATH}":/opt/hanseung-lee-citations/log \
         "${DOCKER_IMAGE_TAG}" \
-        -r "${KAKAO_REST_API_KEY}" \
-        -kid "${KAKAO_ID}" \
-        -kpw "${KAKAO_PW}" \
         -gid "${GMAIL_ID}" \
         -gpw "${GMAIL_PW}" \
         -i "${CHECK_INTERVAL}" \
@@ -54,21 +48,6 @@ main() {
 
     while [[ $# -gt 0 ]]; do
     case $1 in
-        -r|--kakao-rest-api-key)
-        KAKAO_REST_API_KEY="$2"
-        shift # past argument
-        shift # past value
-        ;;
-        -kid|--kakao-id)
-        KAKAO_ID="$2"
-        shift # past argument
-        shift # past value
-        ;;
-        -kpw|--kakao-pw)
-        KAKAO_PW="$2"
-        shift # past argument
-        shift # past value
-        ;;
         -gid|--gmail-id)
         GMAIL_ID="$2"
         shift # past argument

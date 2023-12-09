@@ -2,7 +2,6 @@ from enum import Enum
 from typing import BinaryIO, List, Tuple
 
 class SenderType(Enum):
-    KAKAO="kakao"
     GMAIL="gmail"
 
 class Sender:
