@@ -4,6 +4,7 @@ from email.message import EmailMessage
 from typing import BinaryIO, List, Tuple
 from .sender import Sender, SenderType
 
+
 class Gmail(Sender):
     def __init__(self, sender_id: str, sender_pw: str, logger: logging.Logger):
         super().__init__(SenderType.GMAIL)
@@ -36,7 +37,13 @@ class Gmail(Sender):
                 # ignore exception
                 pass
 
-    def send(self, subject: str = "", content: str = "", attachments: List[Tuple[str, str, str, BinaryIO]] = [], receiver: List[str] = []):
+    def send(
+        self,
+        subject: str = "",
+        content: str = "",
+        attachments: List[Tuple[str, str, str, BinaryIO]] = [],
+        receiver: List[str] = [],
+    ):
         if not self.is_connected():
             self.login()
 
@@ -49,7 +56,9 @@ class Gmail(Sender):
 
             for filename, maintype, subtype, fp in attachments:
                 data = fp.read()
-                msg.add_attachment(data, maintype=maintype, subtype=subtype, filename=filename)
+                msg.add_attachment(
+                    data, maintype=maintype, subtype=subtype, filename=filename
+                )
 
             self.smtp.send_message(msg)
         except Exception as e:
