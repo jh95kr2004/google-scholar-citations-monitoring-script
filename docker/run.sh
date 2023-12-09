@@ -12,8 +12,8 @@ CHECK_INTERVAL="300"
 DOMAIN=""
 HTTP_PORT="8080"
 SENDER_TYPE="gmail"
-DOCKER_IMAGE_TAG="hanseung-lee-citations"
-DOCKER_CONTAINER_NAME="hanseung-lee-citations"
+DOCKER_IMAGE_TAG="google-scholar-citations-monitoring"
+DOCKER_CONTAINER_NAME="google-scholar-citations-monitoring"
 DAEMON=false
 
 run_container() {
@@ -30,8 +30,8 @@ run_container() {
         --user $uid:$gid \
         -p "${HTTP_PORT}":"${HTTP_PORT}" \
         --name "${DOCKER_CONTAINER_NAME}" \
-        -v "${SC_PATH}":/opt/hanseung-lee-citations/screenshots \
-        -v "${LOG_PATH}":/opt/hanseung-lee-citations/log \
+        -v "${SC_PATH}":/opt/google-scholar-citations-monitoring/screenshots \
+        -v "${LOG_PATH}":/opt/google-scholar-citations-monitoring/log \
         -v "${HOME}/.cache:/.cache" \
         "${DOCKER_IMAGE_TAG}" \
         -s "${SCHOLAR_URL}" \

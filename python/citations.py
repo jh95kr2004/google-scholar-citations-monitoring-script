@@ -169,7 +169,7 @@ class Citations(Flask):
         if self.update_citations():
             with open(os.path.join(self.sc_path, self.last_screenshot), "rb") as fp:
                 self.sender.send(
-                    subject=f"Hanseung Lee Citations: {self.last_citations}",
+                    subject=f"The number of citations has been updated: {self.last_citations}",
                     content=f"Current citations: {self.last_citations}\nScreenshot URL: {self.create_image_uri()}\nUpdate: {self.create_update_uri()}\nLatest: {self.create_latest_uri()}",
                     attachments=[(self.last_screenshot, "image", "png", fp)],
                     receiver=[self.sender.id],
