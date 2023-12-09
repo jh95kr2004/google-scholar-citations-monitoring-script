@@ -20,14 +20,12 @@ from .sender import Sender, SenderType
 
 class Citations(Flask):
     scholar_url = "https://scholar.google.com/citations?user=DdhlAfgAAAAJ&hl=en"
-    hanseung_lee_email = "soul3434@gmail.com"
 
     def __init__(
         self,
         gmail_id: str,
         gmail_pw: str,
         check_interval: int = 300,
-        target_citations: int = 1000,
         sc_path: str = "./screenshots",
         log_path: str = "./log",
         log_file: str = "log.txt",
@@ -92,7 +90,6 @@ class Citations(Flask):
         self.check_interval: int = check_interval
         self.check_thread: threading.Timer = None
 
-        self.target_citations: int = target_citations
         self.last_citations: int = None
         self.last_screenshot: str = None
 
@@ -176,18 +173,6 @@ class Citations(Flask):
                 )
             self.store_token()
 
-            if self.last_citations >= self.target_citations:
-                self.logger.info("Send congratulation email")
-                with open(os.path.join(self.sc_path, self.last_screenshot), "rb") as fp:
-                    self.sender.send(
-                        subject=f"논문 인용횟수 {self.target_citations}회 돌파 축하드립니다!",
-                        content=f"한승형 안녕하세요..!\n논문 인용횟수 {self.target_citations}회 돌파를 축하드립니다 ㅎㅎㅎ\n제가 첫 번째 발견자이길 바래봅니다!!\n다시 한 번 축하드려요 ㅎㅎ\n\n장정훈 드림.",
-                        attachments=[(self.last_screenshot, "image", "png", fp)],
-                        receiver=[self.sender.id, Citations.hanseung_lee_email],
-                    )
-                self.logger.debug("Stop repeating checking citations")
-                return
-
         self.check_thread = threading.Timer(
             self.check_interval, self.repeat_checking_citations
         )
@@ -251,7 +236,6 @@ if __name__ == "__main__":
     parser.add_argument("--gmail_id", default=None, type=str)
     parser.add_argument("--gmail_pw", default=None, type=str)
     parser.add_argument("--check_interval", default=300, type=int)
-    parser.add_argument("--target_citations", default=1000, type=int)
     parser.add_argument("--domain", default="", type=str)
     parser.add_argument("--http_port", default="8080", type=str)
     parser.add_argument("--log_path", default="./log", type=str)
@@ -266,7 +250,6 @@ if __name__ == "__main__":
         gmail_id=args.gmail_id,
         gmail_pw=args.gmail_pw,
         check_interval=args.check_interval,
-        target_citations=args.target_citations,
         sc_path=args.sc_path,
         log_path=args.log_path,
         log_file=args.log_file,
