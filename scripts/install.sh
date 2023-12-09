@@ -14,8 +14,8 @@ install_chrome() {
         error "google-chrome-stable is already installed, remove it and retry this script"
     fi
 
-    wget http://dl.google.com/linux/chrome/deb/pool/main/g/google-chrome-stable/google-chrome-stable_102.0.5005.115-1_amd64.deb
-    if ! sudo apt -y install ./google-chrome-stable_102.0.5005.115-1_amd64.deb; then
+    wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+    if ! sudo apt -y install ./google-chrome-stable_current_amd64.deb; then
         error "Failed to install Chrome"
     fi
 }
@@ -34,9 +34,18 @@ create_env() {
 
     echo "Create conda env: ${CONDA_ENV}"
 
-    if ! conda create -y -n "${CONDA_ENV}" python=3 selenium requests flask python-chromedriver-binary=102 -c conda-forge; then
+    if ! conda create -y -n "${CONDA_ENV}" python=3 selenium requests flask -c conda-forge; then
         error "Failed to create conda env"
     fi
+}
+
+activate_env() {
+    eval "$(conda shell.bash hook)"
+    conda activate "${CONDA_ENV}"
+}
+
+install_packages() {
+    pip install chromedriver-binary-auto
 }
 
 main() {
@@ -66,6 +75,8 @@ main() {
     install_chrome
     check_conda
     create_env
+    activate_env
+    install_packages
 }
 
 main "$@"
